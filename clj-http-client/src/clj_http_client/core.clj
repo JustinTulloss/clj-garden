@@ -2,13 +2,14 @@
   (:use (clojure.contrib fcase except def))
   (:import (org.apache.commons.httpclient
              HttpClient DefaultHttpMethodRetryHandler Header
-             HttpMethod HttpMethodBase)
+             HttpMethod HttpMethodBase UsernamePasswordCredentials)
            (org.apache.commons.httpclient.methods
              HeadMethod GetMethod PutMethod PostMethod DeleteMethod
              RequestEntity ByteArrayRequestEntity FileRequestEntity
              InputStreamRequestEntity StringRequestEntity EntityEnclosingMethod)
            (org.apache.commons.httpclient.methods.multipart
              MultipartRequestEntity)
+           (org.apache.commons.httpclient.auth AuthScope)
            (org.apache.commons.httpclient.params HttpMethodParams)
            (org.apache.commons.httpclient.cookie CookiePolicy)
            (org.apache.commons.io IOUtils)
@@ -52,13 +53,19 @@
 
 (defn- http-execute-method
   "Generalized http request."
-  [#^HttpMethod method headers body-args handler]
+  [#^HttpMethod method headers body-args handler & credentials]
   (let [client        (HttpClient.)
         method-params (.getParams method)]
     (.setParameter method-params HttpMethodParams/RETRY_HANDLER
       (DefaultHttpMethodRetryHandler.))
     (.setCookiePolicy method-params CookiePolicy/IGNORE_COOKIES)
+    (println "So Far so good0")
     (when headers (apply-headers method headers))
+    (println AuthScope/ANY_REALM)
+    (when credentials (.setCredentials(.getState client)
+        ;(AuthScope. (nth credentials 0) 443 AuthScope/ANY_REALM)
+        AuthScope/ANY
+        (UsernamePasswordCredentials. (nth credentials 1) (nth credentials 2))))
     (when body-args
       (.setRequestEntity #^EntityEnclosingMethod method
         (request-entity body-args)))
@@ -82,6 +89,15 @@
   [url & [headers]]
   (http-execute-method (GetMethod. url) headers nil
     (fn [s h method] [s h (method-body method)])))
+
+(defn http-get-auth
+  "Returns the result of http-get, except allows you to autheticate"
+  [url username password & [headers]]
+  (println "I wonder if there's a debugger... grumbl3")
+  (let [getter (GetMethod. url)]
+      (.setDoAuthentication getter true)
+      (http-execute-method getter headers nil
+        (fn [s h method] [s h (method-body method)]) url username password)))
 
 (defn http-get-bytes
   "Returns a [status headers body-byte-array] tuple corresponding to the 
