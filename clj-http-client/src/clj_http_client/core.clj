@@ -59,9 +59,7 @@
     (.setParameter method-params HttpMethodParams/RETRY_HANDLER
       (DefaultHttpMethodRetryHandler.))
     (.setCookiePolicy method-params CookiePolicy/IGNORE_COOKIES)
-    (println "So Far so good0")
     (when headers (apply-headers method headers))
-    (println AuthScope/ANY_REALM)
     (when credentials (.setCredentials(.getState client)
         ;(AuthScope. (nth credentials 0) 443 AuthScope/ANY_REALM)
         AuthScope/ANY
@@ -93,7 +91,6 @@
 (defn http-get-auth
   "Returns the result of http-get, except allows you to autheticate"
   [url username password & [headers]]
-  (println "I wonder if there's a debugger... grumbl3")
   (let [getter (GetMethod. url)]
       (.setDoAuthentication getter true)
       (http-execute-method getter headers nil
