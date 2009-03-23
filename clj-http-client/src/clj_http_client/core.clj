@@ -133,6 +133,15 @@
     (http-execute-method (PutMethod. url) headers body-args
       (fn [s h put-method] (method-body put-method)))))
 
+(defn http-post-auth
+  "Returns the result of http-post, except allows you to authenticate"
+  [url username password & request-args]
+    (let [poster (PostMethod. url)]
+      (let [[headers body-args] (headers-and-body-args request-args)]
+        (.setDoAuthentication poster true)
+        (http-execute-method poster headers body-args
+          (fn [s h post-method] [s h (method-body post-method)]) url username password))))
+
 (defn http-post
   "Returns a [status headers body] tuple corresponding to the response from a
   POSt request to the given url. request-args are of the form 
